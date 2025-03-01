@@ -5,7 +5,7 @@
  * It validates Azure OpenAI credentials and creates a deployment if needed.
  */
 
-const { OpenAIClient, AzureKeyCredential } = require('@azure/openai');
+const { AzureOpenAI } = require('openai');
 const dotenv = require('dotenv');
 const path = require('path');
 const fs = require('fs');
@@ -30,16 +30,55 @@ function prompt(question) {
 }
 
 // Function to validate Azure OpenAI credentials
-async function validateCredentials(endpoint, apiKey) {
+async function validateCredentials(endpoint, apiKey, deploymentName) {
   try {
-    const client = new OpenAIClient(endpoint, new AzureKeyCredential(apiKey));
+    // Create Azure OpenAI client
+    const client = new AzureOpenAI({
+      apiKey: apiKey,
+      endpoint: endpoint,
+      apiVersion: "2023-12-01-preview",
+      deployment: deploymentName || "gpt-35-turbo" // Use provided deployment or default
+    });
     
-    // Try to list deployments to validate credentials
     console.log('Testing Azure OpenAI credentials...');
-    const deployments = await client.listDeployments();
     
-    console.log('✅ Credentials are valid!');
-    return { valid: true, deployments: deployments };
+    // Try a simple chat completion to validate credentials
+    // If no deployment is specified yet, this might fail, but we'll catch the error
+    try {
+      const chatCompletion = await client.chat.completions.create({
+        messages: [{ role: "user", content: "Hello, Azure OpenAI!" }],
+        max_tokens: 5,
+        model: deploymentName || "gpt-35-turbo"
+      });
+      
+      console.log('✅ Credentials and deployment are valid!');
+      return { 
+        valid: true, 
+        validDeployment: true,
+        deployments: [
+          { name: deploymentName || "gpt-35-turbo", model: deploymentName || "gpt-35-turbo" }
+        ]
+      };
+    } catch (deploymentError) {
+      // If the deployment error mentions the deployment, credentials are valid but deployment is not
+      if (deploymentError.message.includes('deployment') || 
+          deploymentError.message.includes('model')) {
+        console.log('✅ Credentials are valid, but deployment needs to be configured.');
+        return { 
+          valid: true, 
+          validDeployment: false,
+          deployments: [
+            { name: "gpt-35-turbo", model: "gpt-35-turbo" },
+            { name: "gpt-4", model: "gpt-4" },
+            { name: "gpt-4-32k", model: "gpt-4-32k" },
+            { name: "gpt-35-turbo-16k", model: "gpt-35-turbo-16k" }
+          ]
+        };
+      } else {
+        // Other errors might indicate invalid credentials
+        throw deploymentError;
+      }
+    }
   } catch (error) {
     console.error('❌ Error validating credentials:', error.message);
     return { valid: false, error: error.message };
@@ -121,7 +160,7 @@ async function main() {
   }
   
   // Validate credentials
-  const validation = await validateCredentials(endpoint, apiKey);
+  const validation = await validateCredentials(endpoint, apiKey, deploymentName);
   
   if (!validation.valid) {
     console.log('\n❌ Invalid Azure OpenAI credentials. Please check your endpoint and API key.');
@@ -130,44 +169,24 @@ async function main() {
   }
   
   // Check for deployments
-  console.log('\nAvailable model deployments:');
-  const deployments = validation.deployments;
+  console.log('\nRecommended model deployments:');
+  console.log('1. gpt-35-turbo (Most cost-effective)');
+  console.log('2. gpt-4 (Best quality, more expensive)');
+  console.log('3. gpt-4-32k (Extended context window)');
+  console.log('4. gpt-35-turbo-16k (Extended context window, more cost-effective)');
   
-  if (deployments.length === 0) {
-    console.log('No deployments found. You need to create a deployment in the Azure portal.');
-    console.log('Recommended models: gpt-35-turbo or gpt-4');
-  } else {
-    deployments.forEach((deployment, index) => {
-      console.log(`${index + 1}. ${deployment.name} (${deployment.model})`);
-    });
+  if (!validation.validDeployment && !deploymentName) {
+    console.log('\nYou need to create a deployment in your Azure OpenAI resource:');
+    console.log('1. Go to the Azure Portal and navigate to your Azure OpenAI resource');
+    console.log('2. Click on "Model deployments" in the left menu');
+    console.log('3. Click "Create new deployment" and select a model like gpt-35-turbo');
+    console.log('4. Give your deployment a name and deploy it');
     
-    // Check if we need gpt-4 or gpt-35-turbo
-    const gpt4Deployment = isModelDeployed(deployments, 'gpt-4');
-    const gpt35Deployment = isModelDeployed(deployments, 'gpt-35-turbo');
-    
-    if (gpt4Deployment) {
-      console.log('\n✅ GPT-4 deployment found! This is recommended for best results.');
-      
-      if (!deploymentName) {
-        deploymentName = gpt4Deployment;
-        updateEnvFile('AZURE_OPENAI_DEPLOYMENT_NAME', deploymentName);
-      }
-    } else if (gpt35Deployment) {
-      console.log('\n✅ GPT-3.5 Turbo deployment found! This will work well for the chatbot.');
-      
-      if (!deploymentName) {
-        deploymentName = gpt35Deployment;
-        updateEnvFile('AZURE_OPENAI_DEPLOYMENT_NAME', deploymentName);
-      }
-    } else {
-      console.log('\n⚠️ No GPT-4 or GPT-3.5 Turbo deployments found.');
-      console.log('Please create a deployment in the Azure portal or select another deployment.');
-    }
-  }
-  
-  // Prompt for deployment name if not set
-  if (!deploymentName) {
-    deploymentName = await prompt('\nEnter your Azure OpenAI deployment name: ');
+    deploymentName = await prompt('\nEnter your Azure OpenAI deployment name after you have created it: ');
+    updateEnvFile('AZURE_OPENAI_DEPLOYMENT_NAME', deploymentName);
+  } else if (validation.validDeployment && !deploymentName) {
+    // Use the first deployment from the validation
+    deploymentName = validation.deployments[0].name;
     updateEnvFile('AZURE_OPENAI_DEPLOYMENT_NAME', deploymentName);
   }
   
