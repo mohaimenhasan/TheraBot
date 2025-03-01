@@ -1,4 +1,4 @@
-const { OpenAIClient, AzureKeyCredential } = require('@azure/openai');
+const { AzureOpenAI } = require('openai');
 const dotenv = require('dotenv');
 const path = require('path');
 
@@ -11,7 +11,12 @@ const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
 const deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT_NAME;
 
 // Initialize OpenAI client
-const client = new OpenAIClient(endpoint, new AzureKeyCredential(apiKey));
+const client = new AzureOpenAI({
+  apiKey: apiKey,
+  endpoint: endpoint,
+  deployment: deploymentName,
+  apiVersion: "2023-12-01-preview"
+});
 
 // System prompt for mental health coach
 const SYSTEM_PROMPT = `
@@ -91,13 +96,15 @@ async function processMessage(message, conversationHistory = []) {
       { role: 'user', content: userMessage }
     ];
 
-    // Call Azure OpenAI API
-    const response = await client.getChatCompletions(deploymentName, messages, {
+    // Call Azure OpenAI API with the new client structure
+    const response = await client.chat.completions.create({
+      messages: messages,
+      model: deploymentName,
       temperature: 0.7,
-      maxTokens: 800,
-      topP: 0.95,
-      frequencyPenalty: 0.5,
-      presencePenalty: 0.5,
+      max_tokens: 800,
+      top_p: 0.95,
+      frequency_penalty: 0.5,
+      presence_penalty: 0.5,
     });
 
     // Extract and return the response text
