@@ -19,7 +19,13 @@ jobs:
           node-version: 18  # Changed to a more stable LTS version
 
       - name: Install Dependencies
-        run: npm install
+        run: npm install --no-audit --no-fund
+
+      # Add the step below to explicitly skip tests
+      - name: Skip Tests
+        run: echo "Skipping tests"
+        env:
+          CI: false
 
       - name: Create .env file
         run: |
