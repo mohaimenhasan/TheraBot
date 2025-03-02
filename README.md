@@ -1,6 +1,6 @@
 # Mental Health Coach WhatsApp Chatbot
 
-A WhatsApp chatbot that serves as a mental health coach, built using Azure OpenAI and WhatsApp Web.js. This AI-powered chatbot provides mental health support, coping strategies based on Cognitive Behavioral Therapy (CBT), and mood tracking.
+A WhatsApp chatbot that serves as a mental health coach, built using Azure OpenAI and Twilio's WhatsApp API. This AI-powered chatbot provides mental health support, coping strategies based on Cognitive Behavioral Therapy (CBT), and mood tracking.
 
 ## Features
 
@@ -12,7 +12,7 @@ A WhatsApp chatbot that serves as a mental health coach, built using Azure OpenA
 - **Positive Affirmations**: Delivers personalized positive affirmations to boost mental well-being
 
 ### Technical Features
-- **WhatsApp Integration**: Seamless communication through WhatsApp
+- **Twilio WhatsApp API Integration**: Reliable WhatsApp communication through Twilio's platform
 - **Azure OpenAI Integration**: Powered by Azure OpenAI for natural, empathetic conversations
 - **Conversation Memory**: Maintains conversation context for more helpful responses
 - **Command System**: Useful commands for accessing features like mood history
@@ -22,7 +22,7 @@ A WhatsApp chatbot that serves as a mental health coach, built using Azure OpenA
 
 - Azure account with OpenAI access
 - Azure subscription with at least $200 monthly credits
-- WhatsApp account
+- Twilio account with WhatsApp API access
 - Node.js environment (v14 or higher)
 
 ## Monetization Options
@@ -49,12 +49,21 @@ This chatbot includes built-in support for the following monetization strategies
    ```
    npm install
    ```
-3. Copy `.env.example` to `.env` and update with your Azure OpenAI credentials
+3. Copy `.env.example` to `.env` and update with your Azure OpenAI and Twilio credentials
 4. Start the application:
    ```
    npm start
    ```
-5. Scan the QR code with WhatsApp to link your account
+5. Set up a Twilio webhook pointing to your application's `/api/whatsapp/incoming` endpoint
+6. Test your bot by sending a message to your Twilio WhatsApp number
+
+## Setting Up Twilio WhatsApp
+
+1. Sign up for a Twilio account at [https://www.twilio.com](https://www.twilio.com)
+2. Activate the Twilio Sandbox for WhatsApp in your Twilio console
+3. Add your Twilio account SID, auth token, and WhatsApp number to your `.env` file
+4. Configure the webhook URL in Twilio to point to your application's `/api/whatsapp/incoming` endpoint
+5. Follow Twilio's instructions to connect your WhatsApp number to the sandbox
 
 ## User Commands
 
