@@ -39,10 +39,17 @@ jobs:
 
       # Removed the interactive setup step that won't work in CI/CD
 
+      # Add Azure login step using the federated credentials
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_C1D14AF58139407DB02C57995914CF9C }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_E30C7DFE0E394592BAA4AD2F42917441 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_EABA62C866574866920501E44564CD73 }}
+
       - name: Deploy to Azure
         uses: azure/webapps-deploy@v2
         with:
           app-name: "Therabot"  # Replace with your Azure App Service name
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: .
 
