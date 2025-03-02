@@ -16,7 +16,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18  # Changed to a more stable LTS version
+          node-version: 22  # Changed to a more stable LTS version
 
       - name: Install Dependencies
         run: npm install --no-audit --no-fund
